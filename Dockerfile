@@ -20,9 +20,19 @@ COPY src/ .
 # Create static directory (avoids STATICFILES_DIRS warning if missing)
 RUN mkdir -p static
 
-# Entrypoint waits for PostgreSQL then runs command
-COPY src/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Entrypoint created inside image (Unix line endings, no CRLF)
+RUN printf '%s\n' \
+  '#!/bin/sh' \
+  'set -e' \
+  'POSTGRES_HOST="${POSTGRES_HOST:-db}"' \
+  'POSTGRES_PORT="${POSTGRES_PORT:-5432}"' \
+  'echo "Waiting for PostgreSQL at $POSTGRES_HOST:$POSTGRES_PORT..."' \
+  'while ! nc -z "$POSTGRES_HOST" "$POSTGRES_PORT" 2>/dev/null; do sleep 1; done' \
+  'echo "PostgreSQL is up."' \
+  'python manage.py migrate --noinput' \
+  'python manage.py collectstatic --noinput --clear 2>/dev/null || true' \
+  'exec "$@"' \
+  > /entrypoint.sh && chmod +x /entrypoint.sh
 
 EXPOSE 8000
 
