@@ -1,0 +1,14 @@
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+.git
+.gitignore
+*.md
+db.sqlite3
+.env
+.env.*
+comparison_output
+mock-data
+*.csv

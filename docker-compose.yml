@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: tenable_reports
+      POSTGRES_USER: tenable
+      POSTGRES_PASSWORD: tenable_secret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tenable -d tenable_reports"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    command: gunicorn --bind 0.0.0.0:8000 --workers 2 tenable_web.wsgi:application
+    volumes:
+      - ./src:/app
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    ports:
+      - "8000:8000"
+    environment:
+      POSTGRES_DB: tenable_reports
+      POSTGRES_USER: tenable
+      POSTGRES_PASSWORD: tenable_secret
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      SECRET_KEY: "dev-secret-key-change-me-in-production"
+      DEBUG: "1"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  media_data:
+  static_data:

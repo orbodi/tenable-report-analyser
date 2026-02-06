@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Upload des rapports - Tenable Report Analyser{% endblock %}
+
+{% block content %}
+<div class="grid md:grid-cols-[1.2fr,0.8fr] gap-8 items-start">
+  <div class="bg-tenable-navy/80 border border-slate-800 rounded-2xl p-6 shadow-xl shadow-black/40 relative">
+    <h1 class="text-xl font-semibold mb-1 text-white">Comparer deux rapports Tenable</h1>
+    <p class="text-sm text-slate-300 mb-6">
+      Uploade l'ancien et le nouveau rapport CSV pour obtenir les plugins, CVE et hosts patchés / non patchés.
+    </p>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-5" id="compare-form">
+      {% csrf_token %}
+
+      <div>
+        <label class="block text-sm font-medium text-tenable-lucid mb-1" for="{{ form.old_report.id_for_label }}">
+          Ancien rapport (CSV)
+        </label>
+        <div class="flex items-center gap-3">
+          <div class="flex-1">
+            <input
+              type="file"
+              name="{{ form.old_report.html_name }}"
+              id="{{ form.old_report.id_for_label }}"
+              accept=".csv"
+              class="block w-full text-sm text-slate-100 file:mr-4 file:py-2 file:px-4 file:rounded-full
+                     file:border file:border-tenable-saber/30 file:text-sm file:font-semibold file:bg-tenable-saber/70 file:text-slate-50
+                     hover:file:bg-tenable-saberLight/80 cursor-pointer bg-tenable-midnight border border-slate-700/80
+                     rounded-lg px-3 py-2 transition-colors"
+              required
+            />
+          </div>
+        </div>
+        {% if form.old_report.errors %}
+          <p class="text-xs text-red-400 mt-1">{{ form.old_report.errors|striptags }}</p>
+        {% endif %}
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-tenable-lucid mb-1" for="{{ form.new_report.id_for_label }}">
+          Nouveau rapport (CSV)
+        </label>
+        <div class="flex items-center gap-3">
+          <div class="flex-1">
+            <input
+              type="file"
+              name="{{ form.new_report.html_name }}"
+              id="{{ form.new_report.id_for_label }}"
+              accept=".csv"
+              class="block w-full text-sm text-slate-100 file:mr-4 file:py-2 file:px-4 file:rounded-full
+                     file:border file:border-tenable-saber/30 file:text-sm file:font-semibold file:bg-tenable-saber/70 file:text-slate-50
+                     hover:file:bg-tenable-saberLight/80 cursor-pointer bg-tenable-midnight border border-slate-700/80
+                     rounded-lg px-3 py-2 transition-colors"
+              required
+            />
+          </div>
+        </div>
+        {% if form.new_report.errors %}
+          <p class="text-xs text-red-400 mt-1">{{ form.new_report.errors|striptags }}</p>
+        {% endif %}
+      </div>
+
+      <button
+        type="submit"
+        id="submit-button"
+        class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-tenable-amber/70 hover:bg-tenable-amber/80
+               text-sm font-semibold text-slate-950 shadow-md shadow-tenable-amber/30 border border-tenable-amber/40 focus:outline-none
+               focus:ring-2 focus:ring-offset-2 focus:ring-offset-tenable-navy focus:ring-tenable-amber/70 disabled:opacity-60 transition-colors"
+      >
+        <span id="submit-label">Lancer la comparaison</span>
+        <svg
+          id="submit-spinner"
+          class="ml-2 h-4 w-4 animate-spin text-white hidden"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+          ></path>
+        </svg>
+      </button>
+    </form>
+  </div>
+
+  <div class="space-y-4">
+    <div class="bg-tenable-navy/80 border border-slate-800 rounded-2xl p-4">
+      <h2 class="text-sm font-semibold text-tenable-lucid mb-2">Ce que vous obtenez</h2>
+      <ul class="text-xs text-slate-300 space-y-1.5">
+        <li>• Plugins avec <span class="text-tenable-neon font-medium">CVE / hosts patchés</span></li>
+        <li>• Plugins avec <span class="text-tenable-amber font-medium">CVE / hosts non patchés</span></li>
+        <li>• <span class="text-tenable-saberLight font-medium">Nouveaux plugins</span> introduits entre les deux rapports</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Overlay de chargement -->
+  <div
+    id="loading-overlay"
+    class="hidden absolute inset-0 rounded-2xl bg-tenable-midnight/90 backdrop-blur flex flex-col items-center justify-center gap-3"
+  >
+    <div class="h-10 w-10 border-2 border-tenable-saber border-t-transparent rounded-full animate-spin"></div>
+    <p class="text-xs text-slate-200">Analyse des rapports en cours...</p>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const form = document.getElementById("compare-form");
+    if (!form) return;
+    const btn = document.getElementById("submit-button");
+    const spinner = document.getElementById("submit-spinner");
+    const label = document.getElementById("submit-label");
+    const overlay = document.getElementById("loading-overlay");
+
+    form.addEventListener("submit", function () {
+      if (btn) {
+        btn.disabled = true;
+      }
+      if (spinner) {
+        spinner.classList.remove("hidden");
+      }
+      if (label) {
+        label.textContent = "Traitement en cours...";
+      }
+      if (overlay) {
+        overlay.classList.remove("hidden");
+      }
+    });
+  })();
+</script>
+{% endblock %}
+

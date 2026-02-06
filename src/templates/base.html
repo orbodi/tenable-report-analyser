@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{% block title %}Tenable Report Analyser{% endblock %}</title>
+    <!-- Tailwind via CDN, customisé aux couleurs Tenable -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              tenable: {
+                midnight: "#000026",
+                navy: "#041E42",
+                saber: "#0087F5",
+                saberLight: "#80C3FA",
+                neon: "#26FF93",
+                lucid: "#00F0FF",
+                amber: "#FFB900",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <!-- jQuery + DataTables pour tables interactives -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css"
+    />
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+  </head>
+  <body class="bg-tenable-midnight text-slate-100 min-h-screen">
+    <div class="min-h-screen flex flex-col">
+      <!-- Top navbar -->
+      <header class="h-12 border-b border-slate-800 bg-tenable-navy/95 flex items-center">
+        <div class="flex-1 flex items-center px-4 text-[13px]">
+          <div class="flex items-center gap-3 text-slate-200">
+            <div
+              class="h-7 w-7 rounded-lg bg-tenable-saber flex items-center justify-center text-white font-bold shadow-md shadow-tenable-saber/40"
+            >
+              T
+            </div>
+            <div class="flex flex-col justify-center">
+              <span class="font-semibold tracking-tight leading-tight">Tenable Report Analyser</span>
+              <span class="text-[11px] text-tenable-lucid/70 hidden sm:inline">
+                Différences de vulnérabilités Nessus
+              </span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="flex flex-1 min-h-0">
+        <!-- Sidebar -->
+        <aside class="w-72 bg-tenable-navy/95 border-r border-slate-800 flex flex-col">
+        <div class="px-4 py-3 border-b border-slate-800">
+          <a
+            href="{% url 'reports:upload' %}"
+            class="inline-flex items-center justify-center w-full px-3 py-2 rounded-lg bg-tenable-saber/70 hover:bg-tenable-saberLight/80 text-xs font-semibold text-slate-50 border border-tenable-saber/40 shadow-sm shadow-tenable-saber/30 transition-colors"
+          >
+            + Nouvelle comparaison
+          </a>
+        </div>
+        <div class="px-4 py-3 flex-1 overflow-y-auto">
+          <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">
+            Historique
+          </div>
+          <div class="space-y-1">
+            {% if sidebar_comparisons %}
+              {% for c in sidebar_comparisons %}
+                <div class="group rounded-xl border border-slate-800 bg-tenable-midnight/60 hover:border-tenable-saber/60 hover:bg-tenable-midnight/90 transition-colors text-xs flex items-center gap-2 px-3 py-2">
+                  <a href="{% url 'reports:comparison_detail' c.pk %}" class="flex-1 min-w-0 history-link">
+                    <div class="truncate text-slate-100">
+                      {{ c.old_name|default:"Ancien rapport" }}
+                      <span class="text-tenable-lucid/60">→</span>
+                      {{ c.new_name|default:"Nouveau rapport" }}
+                    </div>
+                    <div class="text-[10px] text-slate-400">
+                      {{ c.created_at|date:"d/m H:i" }}
+                    </div>
+                  </a>
+                  <details class="relative">
+                    <summary class="list-none cursor-pointer text-slate-400 hover:text-slate-100 px-1">
+                      ⋮
+                    </summary>
+                    <div class="absolute right-0 mt-1 w-32 bg-tenable-navy border border-slate-700 rounded-lg shadow-lg z-20">
+                      <form method="post" action="{% url 'reports:delete_comparison' c.pk %}">
+                        {% csrf_token %}
+                        <button
+                          type="submit"
+                          class="w-full text-left text-[11px] px-3 py-2 text-red-300 hover:bg-red-900/40 rounded-lg"
+                        >
+                          Supprimer
+                        </button>
+                      </form>
+                    </div>
+                  </details>
+                </div>
+              {% endfor %}
+            {% else %}
+              <p class="text-[11px] text-slate-500">
+                Aucune comparaison encore enregistrée.
+              </p>
+            {% endif %}
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main content -->
+      <main class="flex-1 min-h-0">
+        <div class="max-w-6xl mx-auto px-6 py-8">
+          {% block content %}{% endblock %}
+        </div>
+      </main>
+      </div>
+    </div>
+
+    <!-- Modal de chargement pour clic sur historique -->
+    <div
+      id="history-loading-modal"
+      class="hidden fixed inset-0 z-40 bg-tenable-midnight/30 flex items-center justify-center"
+    >
+      <div class="bg-tenable-navy/70 border border-slate-700/70 rounded-2xl px-6 py-5 shadow-2xl shadow-black/40 flex items-center gap-3">
+        <div class="h-6 w-6 border-2 border-tenable-saber border-t-transparent rounded-full animate-spin"></div>
+        <div class="text-sm text-slate-100">
+          Chargement de la comparaison...
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        const modal = document.getElementById("history-loading-modal");
+        if (!modal) return;
+        document.addEventListener("click", function (e) {
+          const target = e.target.closest(".history-link");
+          if (!target) return;
+          modal.classList.remove("hidden");
+        });
+      })();
+    </script>
+  </body>
+</html>
+

@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}Résultats de la comparaison - Tenable Report Analyser{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-xl font-semibold text-white">Résultats de la comparaison</h1>
+    <p class="text-sm text-slate-300">
+      Vue synthétique par plugin, CVE et host (patchés, non patchés et nouveaux plugins).
+    </p>
+  </div>
+</div>
+
+{% if error %}
+  <div class="bg-red-900/40 border border-red-700 text-red-100 px-4 py-3 rounded-xl text-sm">
+    {{ error }}
+  </div>
+{% else %}
+  <style>
+    /* Couleurs d'alternance pour les lignes DataTables */
+    .dt-amber-stripe td {
+      background-color: rgba(255, 185, 0, 0.16) !important; /* ambre Tenable, force au-dessus des styles DataTables */
+    }
+    .dt-slate-stripe td {
+      background-color: rgba(30, 41, 59, 0.95) !important; /* gris cendré (proche slate-800), forcé aussi */
+    }
+  </style>
+
+  <div x-data="{ tab: 'patched' }" class="space-y-4" x-cloak>
+    <div class="inline-flex rounded-xl bg-tenable-navy/80 border border-slate-800/80 p-1 text-xs font-medium shadow-sm shadow-black/20">
+      <button
+        type="button"
+        class="px-3 py-1.5 rounded-lg transition-colors"
+        :class="tab === 'patched' ? 'bg-tenable-saber/15 text-tenable-neon' : 'text-slate-300'"
+        @click="tab = 'patched'"
+      >
+        Patchés
+      </button>
+      <button
+        type="button"
+        class="px-3 py-1.5 rounded-lg transition-colors"
+        :class="tab === 'not_patched' ? 'bg-tenable-amber/15 text-tenable-amber' : 'text-slate-300'"
+        @click="tab = 'not_patched'"
+      >
+        Non patchés
+      </button>
+      <button
+        type="button"
+        class="px-3 py-1.5 rounded-lg transition-colors"
+        :class="tab === 'new_plugins' ? 'bg-tenable-saberLight/15 text-tenable-saberLight' : 'text-slate-300'"
+        @click="tab = 'new_plugins'"
+      >
+        Nouveaux plugins
+      </button>
+    </div>
+
+    <!-- Tableau patchés -->
+    <section x-show="tab === 'patched'" class="space-y-2">
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-2">
+          <h2 class="text-sm font-semibold text-tenable-neon">Plugins / CVE / hosts patchés</h2>
+          <span class="text-[11px] px-2 py-0.5 rounded-full bg-tenable-neon/10 text-tenable-neon border border-tenable-neon/40">
+            {{ per_plugin_patched|length }} lignes
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <input
+            id="filter-patched"
+            type="text"
+            placeholder="Filtrer..."
+            class="w-40 bg-tenable-midnight/70 border border-slate-700/70 text-xs text-slate-100 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-tenable-saber/70 placeholder-slate-500"
+          />
+          <a
+            href="{% url 'reports:export_csv' 'patched' %}"
+            class="text-[11px] px-3 py-1 rounded-lg border border-tenable-neon/40 text-tenable-neon hover:bg-tenable-neon/10/80 bg-tenable-midnight/60 transition-colors"
+          >
+            Export CSV
+          </a>
+        </div>
+      </div>
+      <div class="bg-tenable-navy/80 border border-slate-800 rounded-2xl overflow-hidden shadow-lg shadow-black/30">
+        <div class="max-h-[480px] overflow-auto">
+          <table id="table-patched" class="min-w-full text-xs table-auto display stripe hover">
+            <thead class="bg-tenable-navy sticky top-0 z-10">
+              <tr class="border-b border-slate-800/80">
+                <th class="px-4 py-2 text-left font-semibold text-slate-200 text-[11px] uppercase tracking-wide">Plugin ID</th>
+                <th class="px-4 py-2 text-left font-semibold text-slate-200 text-[11px] uppercase tracking-wide">CVE</th>
+                <th class="px-4 py-2 text-left font-semibold text-slate-200 text-[11px] uppercase tracking-wide">Host</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in per_plugin_patched %}
+                <tr class="hover:bg-tenable-midnight/70 transition-colors">
+                  <td class="px-4 py-1.5 font-mono text-slate-100 align-middle">
+                    {{ item.plugin_id }}
+                  </td>
+                  <td class="px-4 py-1.5 align-middle">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-tenable-neon/10 text-tenable-neon font-mono text-[11px]">
+                      {{ item.cve|default:"-" }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-1.5 font-mono text-slate-200 align-middle">
+                    {{ item.host }}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="3" class="px-4 py-4 text-center text-slate-500 text-xs">
+                    Aucun élément patché détecté entre ces deux rapports.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tableau non patchés -->
+    <section x-show="tab === 'not_patched'" class="space-y-2">
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-2">
+          <h2 class="text-sm font-semibold text-tenable-amber">
+            Plugins / CVE / hosts non patchés (présents dans le nouveau rapport)
+          </h2>
+          <span class="text-[11px] px-2 py-0.5 rounded-full bg-tenable-amber/10 text-tenable-amber border border-tenable-amber/40">
+            {{ per_plugin_not_patched|length }} lignes
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <input
+            id="filter-not-patched"
+            type="text"
+            placeholder="Filtrer..."
+            class="w-40 bg-tenable-midnight/70 border border-slate-700/70 text-xs text-slate-100 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-tenable-saber/70 placeholder-slate-500"
+          />
+          <a
+            href="{% url 'reports:export_csv' 'not_patched' %}"
+            class="text-[11px] px-3 py-1 rounded-lg border border-tenable-amber/40 text-tenable-amber hover:bg-tenable-amber/10/80 bg-tenable-midnight/60 transition-colors"
+          >
+            Export CSV
+          </a>
+        </div>
+      </div>
+      <div class="bg-tenable-navy/80 border border-slate-800 rounded-2xl overflow-hidden shadow-lg shadow-black/30">
+        <div class="max-h-[480px] overflow-auto">
+          <table id="table-not-patched" class="min-w-full text-xs table-auto display stripe hover">
+            <thead class="bg-tenable-navy sticky top-0 z-10">
+              <tr class="border-b border-slate-800/80">
+                <th class="px-4 py-2 text-left font-semibold text-slate-200 text-[11px] uppercase tracking-wide">Plugin ID</th>
+                <th class="px-4 py-2 text-left font-semibold text-slate-200 text-[11px] uppercase tracking-wide">CVE</th>
+                <th class="px-4 py-2 text-left font-semibold text-slate-200 text-[11px] uppercase tracking-wide">Host</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in per_plugin_not_patched %}
+                <tr class="hover:bg-tenable-midnight/70 transition-colors">
+                  <td class="px-4 py-1.5 font-mono text-slate-100 align-middle">
+                    {{ item.plugin_id }}
+                  </td>
+                  <td class="px-4 py-1.5 align-middle">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-tenable-amber/10 text-tenable-amber font-mono text-[11px]">
+                      {{ item.cve|default:"-" }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-1.5 font-mono text-slate-200 align-middle">
+                    {{ item.host }}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="3" class="px-4 py-4 text-center text-slate-500 text-xs">
+                    Aucun élément trouvé dans le nouveau rapport.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tableau nouveaux plugins -->
+    <section x-show="tab === 'new_plugins'" class="space-y-2">
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-2">
+          <h2 class="text-sm font-semibold text-tenable-saberLight">Nouveaux plugins (introduits dans le nouveau rapport)</h2>
+          <span class="text-[11px] px-2 py-0.5 rounded-full bg-tenable-saberLight/10 text-tenable-saberLight border border-tenable-saberLight/40">
+            {{ new_plugins_details|length }} lignes
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <input
+            id="filter-new-plugins"
+            type="text"
+            placeholder="Filtrer..."
+            class="w-40 bg-tenable-midnight/70 border border-slate-700/70 text-xs text-slate-100 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-tenable-saber/70 placeholder-slate-500"
+          />
+          <a
+            href="{% url 'reports:export_csv' 'new_plugins' %}"
+            class="text-[11px] px-3 py-1 rounded-lg border border-tenable-saberLight/40 text-tenable-saberLight hover:bg-tenable-saberLight/10/80 bg-tenable-midnight/60 transition-colors"
+          >
+            Export CSV
+          </a>
+        </div>
+      </div>
+      <div class="bg-tenable-navy/80 border border-slate-800 rounded-2xl overflow-hidden shadow-lg shadow-black/30">
+        <div class="max-h-[480px] overflow-auto">
+          <table id="table-new-plugins" class="min-w-full text-xs table-auto display stripe hover">
+            <thead class="bg-tenable-navy sticky top-0 z-10">
+              <tr class="border-b border-slate-800/80">
+                <th class="px-4 py-2 text-left font-semibold text-slate-200 text-[11px] uppercase tracking-wide">Plugin ID</th>
+                <th class="px-4 py-2 text-left font-semibold text-slate-200 text-[11px] uppercase tracking-wide">CVE</th>
+                <th class="px-4 py-2 text-left font-semibold text-slate-200 text-[11px] uppercase tracking-wide">Host</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in new_plugins_details %}
+                <tr class="hover:bg-tenable-midnight/70 transition-colors">
+                  <td class="px-4 py-1.5 font-mono text-slate-100 align-middle">
+                    {{ item.plugin_id }}
+                  </td>
+                  <td class="px-4 py-1.5 align-middle">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-tenable-saberLight/10 text-tenable-saberLight font-mono text-[11px]">
+                      {{ item.cve|default:"-" }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-1.5 font-mono text-slate-200 align-middle">
+                    {{ item.host }}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="3" class="px-4 py-4 text-center text-slate-500 text-xs">
+                    Aucun nouveau plugin détecté dans le nouveau rapport.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Alpine.js pour les tabs légers -->
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+  <!-- Initialisation DataTables avec alternance de couleurs -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const commonOptions = {
+        paging: true,
+        pageLength: 25,
+        lengthChange: false,
+        ordering: true,
+        info: false,
+        searching: true,  // filtrage activé côté DataTables
+        dom: "lrtip",     // supprime le filtre par défaut ("f") de DataTables
+        language: {
+          search: "",
+          paginate: {
+            previous: "Précédent",
+            next: "Suivant",
+          },
+          zeroRecords: "Aucun enregistrement trouvé",
+        },
+        // alternance de couleurs ambre / gris cendré via classes CSS custom
+        stripeClasses: ["dt-amber-stripe", "dt-slate-stripe"],
+      };
+
+      if (window.jQuery) {
+        const tablePatched = jQuery("#table-patched").DataTable(commonOptions);
+        const tableNotPatched = jQuery("#table-not-patched").DataTable(commonOptions);
+        const tableNewPlugins = jQuery("#table-new-plugins").DataTable(commonOptions);
+
+        const bindings = [
+          { id: "filter-patched", table: tablePatched },
+          { id: "filter-not-patched", table: tableNotPatched },
+          { id: "filter-new-plugins", table: tableNewPlugins },
+        ];
+
+        bindings.forEach(function (b) {
+          const input = document.getElementById(b.id);
+          if (!input) return;
+          input.addEventListener("input", function (e) {
+            b.table.search(e.target.value).draw();
+          });
+        });
+      }
+    });
+  </script>
+{% endif %}
+{% endblock %}
+
