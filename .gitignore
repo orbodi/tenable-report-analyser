@@ -41,6 +41,7 @@ Thumbs.db
 # Project
 mock-data/
 comparison_output/
+wheels/
 
 # Docker (optional: uncomment if you don't want to track local overrides)
 # docker-compose.override.yml

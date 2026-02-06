@@ -1,10 +1,11 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <title>{% block title %}Tenable Report Analyser{% endblock %}</title>
-    <!-- Tailwind via CDN, customisé aux couleurs Tenable -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind (servi par l'app pour accès sans Internet côté client) -->
+    <script src="{% static 'vendor/tailwind.js' %}"></script>
     <script>
       tailwind.config = {
         theme: {
@@ -24,13 +25,10 @@
         },
       };
     </script>
-    <!-- jQuery + DataTables pour tables interactives -->
-    <link
-      rel="stylesheet"
-      href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css"
-    />
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <!-- jQuery + DataTables (servis par l'app) -->
+    <link rel="stylesheet" href="{% static 'vendor/jquery.dataTables.min.css' %}" />
+    <script src="{% static 'vendor/jquery-3.7.1.min.js' %}"></script>
+    <script src="{% static 'vendor/jquery.dataTables.min.js' %}"></script>
   </head>
   <body class="bg-tenable-midnight text-slate-100 min-h-screen">
     <div class="min-h-screen flex flex-col">

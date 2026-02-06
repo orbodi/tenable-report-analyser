@@ -78,6 +78,54 @@ tenable-report-analyser/
 └── README.md
 ```
 
+## Utilisation sans accès Internet
+
+### 1. Préparer les paquets sur une machine connectée
+
+Sur un PC **avec** Internet, dans le dossier du projet :
+
+```bash
+# Télécharger toutes les dépendances Python (sans les installer)
+pip download -r requirements.txt -d wheels
+```
+
+Copier sur la machine hors ligne : tout le projet **et** le dossier `wheels/`.
+
+### 2. Lancer l’app sur la machine hors ligne (sans Docker)
+
+Sur le PC **sans** Internet :
+
+```bash
+cd tenable-report-analyser
+
+python -m venv .venv
+.venv\Scripts\activate   # Windows
+# source .venv/bin/activate   # Linux / macOS
+
+# Installer depuis les wheels (aucun accès réseau)
+pip install --no-index --find-links=wheels -r requirements.txt
+
+cd src
+python manage.py migrate
+python manage.py runserver
+```
+
+L’app utilise **SQLite** par défaut (pas besoin de PostgreSQL ni d’Internet). Ouvrir **http://127.0.0.1:8000/**.
+
+### 3. Accès depuis une machine sans Internet (navigateur)
+
+Si l’app tourne sur une **VM avec Internet** et que vous y accédez depuis un **poste sans Internet** (navigateur), les assets (Tailwind, jQuery, DataTables, Alpine) doivent être servis par l’app et non par des CDN.
+
+**Sur la VM (avec Internet), exécuter une fois :**
+
+```bash
+python scripts/download_vendor_assets.py
+```
+
+Cela télécharge les librairies dans `src/static/vendor/`. L’app les sert ensuite via `/static/vendor/...`. Les postes clients n’ont plus besoin d’accéder aux CDN.
+
+---
+
 ## Script CLI (sans interface web)
 
 Pour comparer deux CSV en ligne de commande et générer des CSV dans un dossier de sortie :
