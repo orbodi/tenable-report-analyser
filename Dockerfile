@@ -36,7 +36,7 @@ RUN printf '%s\n' \
   'exec "$@"' \
   > /entrypoint.sh && chmod +x /entrypoint.sh
 
-EXPOSE 8000
+EXPOSE 8008
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "tenable_web.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8008", "--workers", "2", "tenable_web.wsgi:application"]

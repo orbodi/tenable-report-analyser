@@ -17,13 +17,14 @@ services:
 
   web:
     build: .
-    command: gunicorn --bind 0.0.0.0:8000 --workers 2 tenable_web.wsgi:application
+    command: gunicorn --bind 0.0.0.0:8008 --workers 2 tenable_web.wsgi:application
     volumes:
       - ./src:/app
+      - ./scripts:/app/scripts
       - media_data:/app/media
       - static_data:/app/staticfiles
     ports:
-      - "8000:8000"
+      - "8008:8008"
     environment:
       POSTGRES_DB: tenable_reports
       POSTGRES_USER: tenable
